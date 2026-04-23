@@ -1,0 +1,39 @@
+1.C.Interrupt-Based UART
+#include <xc.h>
+#define _XTAL_FREQ 20000000
+char rx_data;
+void UART_Init() {
+    TRISC6 = 1;
+    TRISC7 = 1;
+    SPBRG = 129;
+    BRGH = 1;
+    SYNC = 0;
+    SPEN = 1;
+    TXEN = 1;
+    CREN = 1;
+    RCIE = 1;
+    PEIE = 1;
+    GIE = 1;
+}
+void UART_TxChar(char data) {
+    while (!TRMT);
+    TXREG = data;
+}
+void UART_TxString(const char *str) {
+    while (*str) {
+        UART_TxChar(*str++);
+    }
+}
+void __interrupt() ISR() {
+    if (RCIF) {
+        rx_data = RCREG;
+        UART_TxChar(rx_data);
+    }
+}
+void main() {
+    UART_Init();
+    while (1) {
+        UART_TxString("Hello UART\r\n");
+        __delay_ms(1000);
+    }
+}
