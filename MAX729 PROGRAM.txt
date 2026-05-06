@@ -1,0 +1,86 @@
+#include <xc.h>\\to include registers
+#define _XTAL_FREQ 20000000 \\clock runs at 20mhz
+
+#pragma config FOSC = HS \\oscillator is set to highspeed
+#pragma config WDT = OFF\\safety timer is off 
+#pragma config LVP = OFFlow voltage programming is off
+#pragma config PBADEN = OFF \\port b pins is set to digital
+
+#define CS LATCbits.LATC2 \\cs(chip select)enables the communication with MAX7219
+
+void SPI_Init() \\INITIALIZE SPI 
+{
+    TRISCbits.TRISC3 = 0; \\RC3 OUTPUT 
+    TRISCbits.TRISC5 = 0;\\ MOSI OUTPUT
+    TRISCbits.TRISC4 = 1; \\ MISO INPUT
+
+    SSPSTAT = 0x40; \\DATA SAMPLED IN THE MIDDLE OF THE CLOCK
+    SSPCON1 = 0x21; \\ENABLES SPI
+}
+
+void SPI_Write(unsigned char data) \\FUNCTION TO SEND 1 BYTE
+ {
+    SSPBUF = data; \\PUT DATA INTO SPI BUFFER
+    while(!SSPSTATbits.BF); \\WAITS UNTIL TRANSMISSION IS COMPLETED
+}
+
+void MAX7219_Write(unsigned char address, unsigned char data)\\ SEND COMMAND TO MAX7219
+ {
+    CS = 0; \\ ENBLES THE DEVICE
+    SPI_Write(address); \\SEND REGISTER ADRESS
+    SPI_Write(data); \\SEND DATA
+    CS = 1; \\DISABLE THE DEVICE END OF COMMUNICATION
+}
+
+void MAX7219_Init() \\
+{
+    MAX7219_Write(0x09, 0x00);\\RAW LED CONTROL
+    MAX7219_Write(0x0A, 0x03); \\brightness low
+    MAX7219_Write(0x0B, 0x07); \\scan all 8 rows
+    MAX7219_Write(0x0C, 0x01); \\turn on display
+    MAX7219_Write(0x0F, 0x00); \\test mode off
+}
+
+unsigned char D[8] = {0x7C,0x42,0x42,0x42,0x42,0x42,0x42,0x7C}; \\ 8x8 matrix led control
+unsigned char U[8] = {0x42,0x42,0x42,0x42,0x42,0x42,0x42,0x3C};
+unsigned char X[8] = {0x42,0x24,0x18,0x18,0x18,0x18,0x24,0x42};
+unsigned char E[8] = {0x7E,0x40,0x40,0x7C,0x40,0x40,0x40,0x7E};
+unsigned char S[8] = {0x3C,0x42,0x40,0x3C,0x02,0x02,0x42,0x3C};
+
+void Display_Char(unsigned char *pattern)\\takes pointer to character array
+ {
+    for(int i = 0; i < 8; i++)\\loop through 8 rows
+ {
+        MAX7219_Write(i+1, pattern[i]); \\send each row to MAX7219
+    }
+}
+
+void main()
+ {
+    TRISCbits.TRISC2 = 0;\\OUTPUT
+    CS = 1; \\INITIALLY DISABLED
+
+    SPI_Init();\\INITIALIZE SPI
+    MAX7219_Init();\\INITIALIZE DISPLAY
+
+    while(1)\\ RUN FOREVER
+ {
+        Display_Char(D); \\ SHOW D FOR 1 SECOND
+        __delay_ms(1000);
+
+        Display_Char(U);
+        __delay_ms(1000);
+
+        Display_Char(X);
+        __delay_ms(1000);
+
+        Display_Char(E);
+        __delay_ms(1000);
+
+        Display_Char(S);
+        __delay_ms(1000);
+    }
+}
+
+
+
