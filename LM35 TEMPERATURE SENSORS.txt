@@ -1,0 +1,39 @@
+#include <xc.h> // header file configaration
+#pragma config FOSC = HS //set oscillator to high speed mode
+#pragma config WDTE = OFF//disbling the watch dog timer
+#pragma config PWRTE = ON//enables the power up timer
+#pragma config CP = OFF//disbles the code protection
+
+#define _XTAL_FREQ 20000000//clock frequency to 20mhz
+
+void ADC_Init() //function to enable adc module
+{
+    ADCON0 = 0x01; //select channel AN0 enabling adc module
+    ADCON1 = 0x80;//congigures voltage reference vdd vss
+}
+
+unsigned int ADC_Read()//function to read analog value
+ {
+    __delay_ms(2);//small delay
+    GO_nDONE = 1;//starts conversion
+    while(GO_nDONE);//wait until conversion starts
+    return ((ADRESH<<8) + ADRESL);//returns 10 bit adc result
+}
+
+void main() {
+    TRISA = 0xFF;//SETS PORT A as input
+    TRISB = 0x00;//Port B as output
+
+    ADC_Init();//initializes ADC module
+
+    unsigned int adc_value;//stores ADC result
+    float temperature;//stores the calculated temperature
+
+    while(1) {//runs continously
+        adc_value = ADC_Read();//reads analog value from sensors
+        temperature = (adc_value * 5.0 * 100.0) / 1023.0;//gives temperature in degree c
+        PORTB = (int)temperature;//output integer temperature value 
+        __delay_ms(500);//waits 500 ms before reading 
+    }
+}
+
