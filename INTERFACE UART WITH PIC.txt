@@ -1,0 +1,68 @@
+#include <xc.h>//includes microchip registers
+#define _XTAL_FREQ 8000000//frequency set to 80mhz
+#pragma config FOSC = HS\\oscillator is set to high speed
+#pragma config WDT = OFF\\watchdog timer is disabled
+#pragma config LVP = OFF\\disables low voltage programming
+#pragma config PBADEN = OFF
+void UART_Init()\\function to configure UART
+{
+    TRISC6 = 0;\\tx pin output
+    TRISC7 = 1;\\rx pin input
+    SPBRG = 51;\\baud rate values
+    SPBRGH = 0;\\baud rate values
+    BRGH = 1;\\baud rate at high speed
+    BRG16 = 0;\\8 bit baud rate genarator
+    SYNC = 0;\\UART SO ASYNCHRONOUS
+    SPEN = 1;\\ENABLE SERIAL PORT
+    TXEN = 1;\\ENABLE TRANSMISSION
+    CREN = 1;\\ CONTINUOUS RECEPTION
+
+   
+  TX9 = 0;//8BIT DATA MODE
+    RX9 = 0;//8 bit data mode
+}
+
+void UART_Write(char data)
+{
+    while(!TRMT);\\wait until transmit buffer is empty
+    TXREG = data;\\loading UART data
+}
+
+void UART_Write_Text(const char *text) \\UART WRITE 
+{
+    while(*text) \\LOOP runs  UNITIL string ends
+    {
+        UART_Write(*text++);\\send each character one by one
+    }
+}
+
+char UART_Read() \\receive data
+{
+    while(!RCIF);\\wait until data is received
+    return RCREG;\\return received charater
+}
+
+void main()
+{
+    TRISBbits.TRISB3 = 0;\\output Led pin
+    LATBbits.LATB3 = 0;\\initially led off
+
+    UART_Init();
+
+    while(1) \\runs continously
+    {
+        char data = UART_Read();\\read one character from UART
+
+        if(data == '1')
+        {
+            LATBbits.LATB3 = 1; \\TURN LED ON
+            UART_Write_Text("RED LED -> ON\r\n");\\SENDS MESSAGE TO TERMINAL
+        }
+        else if(data == '0')
+        {
+            LATBbits.LATB3 = 0;\\LED OFF
+            UART_Write_Text("RED -> OFF\r\n");\\SEND MESSAGE
+        }
+    }
+}
+
